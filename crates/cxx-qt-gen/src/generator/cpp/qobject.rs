@@ -10,7 +10,7 @@ use crate::generator::{
     },
     naming::{namespace::NamespaceName, qobject::QObjectName},
 };
-use crate::parser::qobject::ParsedQObject;
+use crate::parser::qobject::{ParsedQObject, ParsedQmlSpecifiers};
 use syn::Result;
 
 #[derive(Default)]
@@ -25,6 +25,17 @@ impl GeneratedCppQObjectBlocks {
     pub fn append(&mut self, other: &mut Self) {
         self.metaobjects.append(&mut other.metaobjects);
         self.methods.append(&mut other.methods);
+    }
+
+    pub fn from(qobject: &ParsedQObject) -> GeneratedCppQObjectBlocks {
+        let mut qml_specifiers = Vec::new();
+        if qobject.qml_specifiers.contains(&ParsedQmlSpecifiers::QmlElement) {
+            qml_specifiers.push("QML_ELEMENT".to_owned());
+        }
+        GeneratedCppQObjectBlocks {
+            metaobjects: qml_specifiers,
+            ..Default::default()
+        }
     }
 }
 
@@ -58,7 +69,7 @@ impl GeneratedCppQObject {
                 .base_class
                 .clone()
                 .unwrap_or_else(|| "QObject".to_string()),
-            ..Default::default()
+            blocks: GeneratedCppQObjectBlocks::from(qobject)
         };
 
         // Generate methods for the properties, invokables, signals

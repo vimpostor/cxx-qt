@@ -3,13 +3,13 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::parser::{qobject::ParsedQObject, signals::ParsedSignalsEnum};
+use crate::parser::{qobject::ParsedQmlSpecifiers, qobject::ParsedQObject, signals::ParsedSignalsEnum};
 use crate::syntax::{
-    attribute::{attribute_find_path, attribute_tokens_to_ident},
+    attribute::{attribute_find_path, attribute_tokens_to_ident, attribute_tokens_to_map, AttributeDefault},
     path::path_to_single_ident,
 };
-use std::collections::BTreeMap;
-use syn::{spanned::Spanned, Error, Ident, Item, ItemEnum, ItemImpl, Result, Type, TypePath};
+use std::collections::{BTreeMap, HashSet};
+use syn::{spanned::Spanned, Error, Ident, Item, ItemEnum, ItemImpl, Result, Type, TypePath, LitStr};
 
 #[derive(Default)]
 pub struct ParsedCxxQtData {
@@ -32,11 +32,21 @@ impl ParsedCxxQtData {
                 if let Some(index) =
                     attribute_find_path(&qobject_struct.attrs, &["cxx_qt", "qobject"])
                 {
+                    let attrs_map = attribute_tokens_to_map::<Ident, LitStr>(
+                        &qobject_struct.attrs[index],
+                        AttributeDefault::Some(|span| LitStr::new("", span)),
+                    )?;
+                    // Parse QML specifiers
+                    let mut qml_specifiers = HashSet::new();
+                    if attrs_map.contains_key(&quote::format_ident!("qml_element")) {
+                        qml_specifiers.insert(ParsedQmlSpecifiers::QmlElement);
+                    }
+
                     // Note that we assume a compiler error will occur later
                     // if you had two structs with the same name
                     self.qobjects.insert(
                         qobject_struct.ident.clone(),
-                        ParsedQObject::from_struct(qobject_struct, index)?,
+                        ParsedQObject::from_struct(qobject_struct, index, qml_specifiers)?,
                     );
                 }
             }

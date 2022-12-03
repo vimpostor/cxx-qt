@@ -20,7 +20,7 @@ mod my_object {
     // ANCHOR_END: book_qstring_import
 
     // ANCHOR: book_rustobj_struct
-    #[cxx_qt::qobject]
+    #[cxx_qt::qobject(qml_element)]
     pub struct MyObject {
         #[qproperty]
         number: i32,

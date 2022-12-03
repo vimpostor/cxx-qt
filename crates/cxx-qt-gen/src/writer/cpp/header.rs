@@ -122,6 +122,7 @@ pub fn write_cpp_header(generated: &GeneratedCppBlocks) -> String {
 
         #include <memory>
         #include <mutex>
+        #include <qqml.h>
 
         namespace rust::cxxqtlib1 {{
         template<typename T>

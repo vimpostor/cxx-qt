@@ -123,8 +123,6 @@ pub fn attribute_tokens_to_map<K: std::cmp::Eq + std::hash::Hash + Parse, V: Par
                     e.insert(value);
                 } else if let AttributeDefault::Some(default_value) = default_value {
                     e.insert(default_value(attr.span()));
-                } else {
-                    return Err(Error::new(attr.span(), "Attribute key is missing a value"));
                 }
             } else {
                 return Err(Error::new(attr.span(), "Duplicate keys in the attributes"));

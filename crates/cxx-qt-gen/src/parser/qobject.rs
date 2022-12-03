@@ -8,6 +8,7 @@ use crate::parser::{
     property::{ParsedQProperty, ParsedRustField},
     signals::ParsedSignalsEnum,
 };
+use std::collections::HashSet;
 use crate::syntax::{
     attribute::{attribute_find_path, attribute_tokens_to_map, AttributeDefault},
     fields::fields_to_named_fields_mut,
@@ -16,6 +17,12 @@ use syn::{
     spanned::Spanned, Error, Fields, Ident, ImplItem, ImplItemMethod, Item, ItemStruct, LitStr,
     Result,
 };
+
+/// Describes specifiers to register with in QML
+#[derive(Eq, Hash, PartialEq)]
+pub enum ParsedQmlSpecifiers {
+    QmlElement,
+}
 
 /// A representation of a QObject within a CXX-Qt [syn::ItemMod]
 ///
@@ -45,6 +52,8 @@ pub struct ParsedQObject {
     pub properties: Vec<ParsedQProperty>,
     /// List of Rust fields on the struct that need getters and setters generated
     pub fields: Vec<ParsedRustField>,
+    /// List of specifiers to register with in QML
+    pub qml_specifiers: HashSet<ParsedQmlSpecifiers>,
     /// Items that we don't need to generate anything for CXX or C++
     /// eg impls on the Rust object or Default implementations
     pub others: Vec<Item>,
@@ -52,7 +61,7 @@ pub struct ParsedQObject {
 
 impl ParsedQObject {
     /// Parse a [syn::ItemStruct] into a [ParsedQObject] with the index of the cxx_qt::qobject specified
-    pub fn from_struct(qobject_struct: &ItemStruct, attr_index: usize) -> Result<Self> {
+    pub fn from_struct(qobject_struct: &ItemStruct, attr_index: usize, qml_specifiers: HashSet<ParsedQmlSpecifiers>) -> Result<Self> {
         // Find if there is any base class
         let base_class = attribute_tokens_to_map::<Ident, LitStr>(
             &qobject_struct.attrs[attr_index],
@@ -79,6 +88,7 @@ impl ParsedQObject {
             methods: vec![],
             properties,
             fields,
+            qml_specifiers,
             others: vec![],
         })
     }
@@ -164,7 +174,7 @@ pub mod tests {
             #[cxx_qt::qobject]
             struct MyObject;
         });
-        ParsedQObject::from_struct(&qobject_struct, 0).unwrap()
+        ParsedQObject::from_struct(&qobject_struct, 0, HashSet::new()).unwrap()
     }
 
     #[test]
@@ -174,7 +184,7 @@ pub mod tests {
             struct MyObject;
         });
 
-        let qobject = ParsedQObject::from_struct(&qobject_struct, 0).unwrap();
+        let qobject = ParsedQObject::from_struct(&qobject_struct, 0, HashSet::new()).unwrap();
         assert!(qobject.base_class.is_none());
     }
 
@@ -185,7 +195,7 @@ pub mod tests {
             struct MyObject;
         });
 
-        let qobject = ParsedQObject::from_struct(&qobject_struct, 0).unwrap();
+        let qobject = ParsedQObject::from_struct(&qobject_struct, 0, HashSet::new()).unwrap();
         assert_eq!(qobject.base_class.as_ref().unwrap(), "QStringListModel");
     }
 
@@ -204,7 +214,7 @@ pub mod tests {
             }
         });
 
-        let qobject = ParsedQObject::from_struct(&qobject_struct, 0).unwrap();
+        let qobject = ParsedQObject::from_struct(&qobject_struct, 0, HashSet::new()).unwrap();
         assert_eq!(qobject.properties.len(), 2);
         assert_eq!(qobject.qobject_struct.fields.len(), 3);
     }
@@ -218,7 +228,7 @@ pub mod tests {
             }
         });
 
-        let qobject = ParsedQObject::from_struct(&qobject_struct, 0).unwrap();
+        let qobject = ParsedQObject::from_struct(&qobject_struct, 0, HashSet::new()).unwrap();
         assert_eq!(qobject.properties.len(), 0);
         assert_eq!(qobject.qobject_struct.fields.len(), 1);
     }
@@ -303,7 +313,7 @@ pub mod tests {
                 field: f64,
             }
         });
-        let properties = ParsedQObject::from_struct(&item, 0).unwrap().properties;
+        let properties = ParsedQObject::from_struct(&item, 0, HashSet::new()).unwrap().properties;
         assert_eq!(properties.len(), 3);
         assert_eq!(properties[0].ident, "f64_property");
         assert_eq!(properties[0].ty, f64_type());
@@ -327,6 +337,6 @@ pub mod tests {
             #[cxx_qt::qobject]
             struct T(f64);
         });
-        assert!(ParsedQObject::from_struct(&item, 0).is_err());
+        assert!(ParsedQObject::from_struct(&item, 0, HashSet::new()).is_err());
     }
 }

@@ -35,7 +35,7 @@ main(int argc, char* argv[])
     Qt::QueuedConnection);
 
   // ANCHOR: book_qml_register
-  qmlRegisterType<MyObject>("com.kdab.cxx_qt.demo", 1, 0, "MyObject");
+  // qmlRegisterType<MyObject>("com.kdab.cxx_qt.demo", 1, 0, "MyObject");
   // ANCHOR_END: book_qml_register
 
   engine.load(url);
