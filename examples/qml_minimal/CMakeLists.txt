@@ -81,7 +81,8 @@ target_link_libraries(${CRATE} INTERFACE
 # Define the executable with the C++ source and Qt resource files
 add_executable(${APP_NAME} cpp/main.cpp qml/qml.qrc)
 # Add a qml module namespace
-qt_add_qml_module(${APP_NAME} URI "com.kdab.cxx_qt.demo" VERSION 1.0)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/cxxqt/qml-minimal/cxx-qt-gen)
+qt_add_qml_module(${APP_NAME} URI "com.kdab.cxx_qt.demo" VERSION 1.0 SOURCES ${CMAKE_CURRENT_BINARY_DIR}/cxxqt/qml-minimal/cxx-qt-gen/my_object.cxxqt.h ${CMAKE_CURRENT_BINARY_DIR}/cxxqt/qml-minimal/cxx-qt-gen/my_object.cxx.h)
 
 # Link to the Rust library
 target_link_libraries(${APP_NAME} PRIVATE ${CRATE})
